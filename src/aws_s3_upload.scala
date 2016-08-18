@@ -46,26 +46,25 @@ class AwsS3Appender {
       val date = new Date()
       val extension = "log"
 
-      // 기존에 만들어진 폴더가 있는지 체크하고 없으면 새로 생성한다. (최초 1회 실행 됨
+      // check existing (same names) directory file on S3 path if it is not, create new directory file. 
       if (!isExistS3(s3client, bucketName, uploadFolderName)) createFolder(bucketName, uploadFolderName, s3client)
 
-      //해당 폴더에 생성되어 있는 모든 로그들의 리스트 (파일 경로 + 파일이름)를 받아온다.
+      //read all files list on the path
       for (path <- paths) {
 
         //println(path.getName)
-        //로그 파일들의 이름을 얻어온다.
+        //get files name
         val fileName = path.getName
 
-        //해당 파일이 .log 로 끝나는지 확인한다.
-        //.log 가 아닌 파일은 제외한다.
+        //check file name ( .log ) and upload files to S3
         if (fileName.toLowerCase().endsWith(extension)) {
           val uploadFileName = uploadFolderName + SUFFIX + fileName
 
-          //해당 파일을 업로드 한다.
+          //upload
           s3client.putObject(new PutObjectRequest(bucketName, uploadFileName, new File(path.toString))
             .withCannedAcl(CannedAccessControlList.PublicRead))
 
-          //업로드 된 파일은 로컬에서 삭제한다.
+          //delete files on local after copying to S3
           path.deleteOnExit()
         }
       }
